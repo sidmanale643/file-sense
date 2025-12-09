@@ -1,0 +1,14 @@
+[project]
+name = "file-sense"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "docling>=2.64.0",
+    "fastapi>=0.124.0",
+    "ipykernel>=7.1.0",
+    "nltk>=3.9.2",
+    "pymilvus[milvus-lite,model]>=2.6.5",
+    "sentence-transformers>=5.1.2",
+]
