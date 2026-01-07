@@ -1,0 +1,93 @@
+.result-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    animation: result-enter var(--duration-normal) var(--ease-out) both;
+    border: 1px solid transparent;
+}
+
+.result-item:hover {
+    background: var(--color-surface-hover);
+    border-color: rgba(0, 255, 65, 0.1);
+}
+
+.result-item--selected {
+    background: var(--color-accent-dim);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 12px rgba(0, 255, 65, 0.15), inset 0 0 12px rgba(0, 255, 65, 0.05);
+}
+
+.result-item--selected:hover {
+    background: var(--color-accent-dim);
+    box-shadow: 0 0 16px rgba(0, 255, 65, 0.2), inset 0 0 16px rgba(0, 255, 65, 0.08);
+}
+
+.result-item__content {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.result-item__name {
+    font-family: var(--font-display);
+    font-size: var(--text-base);
+    font-weight: 500;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.result-item--selected .result-item__name {
+    color: var(--color-accent);
+    text-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
+}
+
+.result-item__path {
+    font-size: var(--text-sm);
+    font-family: var(--font-mono);
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+}
+
+.result-item--selected .result-item__path {
+    color: var(--color-cyan);
+}
+
+.result-item__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-shrink: 0;
+}
+
+.result-item__size {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+}
+
+.result-item__score {
+    width: 40px;
+    height: 4px;
+    background: var(--color-bg-hover);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.result-item__score-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-accent), var(--color-cyan));
+    border-radius: 2px;
+    transition: width var(--duration-normal) var(--ease-out);
+    box-shadow: 0 0 6px rgba(0, 255, 65, 0.4);
+}
