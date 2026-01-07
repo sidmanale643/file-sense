@@ -5,10 +5,16 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "bm25s>=0.2.14",
+    "chonkie>=1.4.2",
     "docling>=2.64.0",
+    "einops>=0.8.0",
+    "faiss-cpu>=1.13.1",
     "fastapi>=0.124.0",
     "ipykernel>=7.1.0",
+    "lancedb>=0.25.3",
     "nltk>=3.9.2",
     "pymilvus[milvus-lite,model]>=2.6.5",
     "sentence-transformers>=5.1.2",
+    "uvicorn>=0.38.0",
 ]
