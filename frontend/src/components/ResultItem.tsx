@@ -1,5 +1,6 @@
 import type { SearchResult } from '../types';
 import { FileIcon } from './FileIcon';
+import { formatFileSize } from '../utils/format';
 import './ResultItem.css';
 
 interface ResultItemProps {
@@ -8,13 +9,6 @@ interface ResultItemProps {
     index: number;
     onClick: () => void;
     onDoubleClick: () => void;
-}
-
-function formatFileSize(bytes: number | undefined): string {
-    if (!bytes) return '';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function getFilenameFromPath(path: string | null): string {
@@ -49,7 +43,7 @@ export function ResultItem({
     return (
         <div
             className={`result-item ${isSelected ? 'result-item--selected' : ''}`}
-            style={{ animationDelay: `${index * 30}ms` }}
+            style={{ animationDelay: `${index * 50}ms` }}
             onClick={onClick}
             onDoubleClick={onDoubleClick}
             role="option"

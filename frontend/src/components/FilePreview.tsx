@@ -2,17 +2,11 @@ import { useState, useEffect } from 'react';
 import type { SearchResult, FilePreviewData } from '../types';
 import { previewFile, openFile, openFolder } from '../services/api';
 import { FileIcon } from './FileIcon';
+import { formatFileSize } from '../utils/format';
 import './FilePreview.css';
 
 interface FilePreviewProps {
     result: SearchResult | null;
-}
-
-function formatFileSize(bytes: number | undefined): string {
-    if (!bytes) return 'Unknown size';
-    if (bytes < 1024) return `${bytes} bytes`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function getFilenameFromPath(path: string | null): string {
@@ -25,6 +19,19 @@ export function FilePreview({ result }: FilePreviewProps) {
     const [preview, setPreview] = useState<FilePreviewData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
+
+    const handleCopyPath = async () => {
+        if (result?.path) {
+            try {
+                await navigator.clipboard.writeText(result.path);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            } catch (err) {
+                console.error('Failed to copy path:', err);
+            }
+        }
+    };
 
     useEffect(() => {
         if (!result?.path) {
@@ -172,8 +179,28 @@ export function FilePreview({ result }: FilePreviewProps) {
             </div>
 
             <div className="file-preview__path">
-                <span className="file-preview__path-label">Path:</span>
+                <div className="file-preview__path-header">
+                    <span className="file-preview__path-label">Path:</span>
+                    <button
+                        className="file-preview__copy-btn"
+                        onClick={handleCopyPath}
+                        title="Copy path"
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                    </button>
+                </div>
                 <code className="file-preview__path-value">{result.path}</code>
+                {copied && (
+                    <div className="file-preview__copy-toast">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Path copied
+                    </div>
+                )}
             </div>
         </div>
     );

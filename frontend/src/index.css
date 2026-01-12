@@ -1,7 +1,11 @@
 /* FileSense Spotlight - Cyber-Technical Matrix Design System */
 
 /* Google Fonts imports - Technical monospace and display fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;900&family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Aldrich&family=Syncopate:wght@400;700&display=swap');
+/* Classic serif font for minimal theme */
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&display=swap');
 
 :root {
   /* Color Palette - Matrix Cyber-Technical */
@@ -24,9 +28,9 @@
   --color-cyan-glow: rgba(0, 240, 255, 0.25);
 
   /* Text colors - terminal style */
-  --color-text-primary: #e0e0e0;
+  --color-text-primary: #f0f0f0;
   --color-text-secondary: #00ff41;
-  --color-text-muted: #3a3a3a;
+  --color-text-muted: #6a6a6a;
 
   /* Border and focus */
   --color-border: rgba(0, 255, 65, 0.15);
@@ -53,11 +57,11 @@
   --font-sans: "JetBrains Mono", "SF Mono", monospace;
   --font-mono: "Share Tech Mono", "Fira Code", monospace;
 
-  --text-xs: 11px;
-  --text-sm: 13px;
-  --text-base: 15px;
-  --text-lg: 18px;
-  --text-xl: 24px;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 21px;
+  --text-xl: 27px;
 
   /* Shadows - Matrix glow style */
   --shadow-sm: 0 2px 8px rgba(0, 255, 65, 0.1);
@@ -79,6 +83,65 @@
   --duration-slow: 300ms;
 }
 
+/* Minimal Theme - Off white with classic serif */
+[data-theme="minimal"] {
+  /* Color Palette - Off white minimalist */
+  --color-bg-deep: #f0f0f0;
+  --color-bg-base: #fafafa;
+  --color-bg-elevated: #ffffff;
+  --color-bg-hover: #f5f5f5;
+
+  --color-surface: rgba(255, 255, 255, 0.95);
+  --color-surface-hover: rgba(255, 255, 255, 0.98);
+
+  /* Muted gray accents instead of neon */
+  --color-accent: #2a2a2a;
+  --color-accent-dim: rgba(0, 0, 0, 0.04);
+  --color-accent-glow: rgba(0, 0, 0, 0.08);
+
+  --color-cyan: #666666;
+  --color-cyan-dim: rgba(0, 0, 0, 0.03);
+  --color-cyan-glow: rgba(0, 0, 0, 0.05);
+
+  /* Text colors - Dark instead of light */
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #2a2a2a;
+  --color-text-muted: #888888;
+
+  /* Border and focus - Subtle gray */
+  --color-border: rgba(0, 0, 0, 0.1);
+  --color-border-focus: rgba(0, 0, 0, 0.3);
+  --color-border-cyan: rgba(0, 0, 0, 0.15);
+
+  /* File type colors - Muted grayscale variants */
+  --color-file-pdf: #8b3a3a;
+  --color-file-doc: #3a6a8b;
+  --color-file-code: #3a8b4a;
+  --color-file-text: #5a8b5a;
+  --color-file-image: #6a5a8b;
+
+  /* Typography - Monospace */
+  --font-display: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
+  --font-sans: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
+
+  /* Shadows - Subtle instead of glow */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-glow: 0 0 16px rgba(0, 0, 0, 0.06);
+  --shadow-cyan: 0 0 16px rgba(0, 0, 0, 0.04);
+}
+
+/* Minimal theme overrides for effects */
+[data-theme="minimal"] body::before {
+  opacity: 0.02;
+}
+
+[data-theme="minimal"] .spotlight__backdrop::after {
+  opacity: 0.01;
+}
+
 /* Reset and Base */
 *,
 *::before,
@@ -96,6 +159,7 @@ html, body, #root {
 body {
   font-family: var(--font-sans);
   font-size: var(--text-base);
+  line-height: 1.6;
   color: var(--color-text-primary);
   background: var(--color-bg-deep);
   -webkit-font-smoothing: antialiased;
@@ -149,11 +213,11 @@ body::before {
 @keyframes result-enter {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(12px) translateX(-8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) translateX(0);
   }
 }
 

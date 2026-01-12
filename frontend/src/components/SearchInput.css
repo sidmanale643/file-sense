@@ -90,3 +90,36 @@
     width: 14px;
     height: 14px;
 }
+
+/* ============================================
+   MINIMAL THEME OVERRIDES
+   ============================================ */
+
+/* Search icon glow - remove green */
+[data-theme="minimal"] .search-input__icon svg {
+    filter: none;
+}
+
+/* Spinner - remove green glow */
+[data-theme="minimal"] .search-input__spinner {
+    box-shadow: none;
+}
+
+/* Field focus - remove green glow */
+[data-theme="minimal"] .search-input__field:focus {
+    color: var(--color-text-primary);
+    text-shadow: none;
+}
+
+/* Clear button hover - remove green */
+[data-theme="minimal"] .search-input__clear:hover {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: var(--color-border-focus);
+    color: var(--color-text-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Bottom accent line - make subtle */
+[data-theme="minimal"] .search-input::after {
+    opacity: 0.15;
+}

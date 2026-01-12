@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import './SearchInput.css';
 
 interface SearchInputProps {
@@ -9,19 +9,32 @@ interface SearchInputProps {
     placeholder?: string;
 }
 
-export function SearchInput({
-    value,
-    onChange,
-    onKeyDown,
-    isLoading,
-    placeholder = 'Search files...',
-}: SearchInputProps) {
-    const inputRef = useRef<HTMLInputElement>(null);
+export interface SearchInputRef {
+    focus: () => void;
+}
 
-    // Auto-focus on mount
-    useEffect(() => {
-        inputRef.current?.focus();
-    }, []);
+export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(
+    function SearchInput(
+        {
+            value,
+            onChange,
+            onKeyDown,
+            isLoading,
+            placeholder = 'Search files...',
+        }: SearchInputProps,
+        ref
+    ) {
+        const inputRef = useRef<HTMLInputElement>(null);
+
+        // Expose focus method to parent
+        useImperativeHandle(ref, () => ({
+            focus: () => inputRef.current?.focus(),
+        }));
+
+        // Auto-focus on mount
+        useEffect(() => {
+            inputRef.current?.focus();
+        }, []);
 
     return (
         <div className="search-input">
@@ -78,4 +91,5 @@ export function SearchInput({
             )}
         </div>
     );
-}
+    }
+);

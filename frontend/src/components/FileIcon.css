@@ -55,3 +55,16 @@
 .file-icon--unknown {
     color: var(--color-text-muted);
 }
+
+/* ============================================
+   MINIMAL THEME OVERRIDES
+   Remove all neon glow effects
+   ============================================ */
+
+[data-theme="minimal"] .file-icon--pdf,
+[data-theme="minimal"] .file-icon--doc,
+[data-theme="minimal"] .file-icon--code,
+[data-theme="minimal"] .file-icon--text,
+[data-theme="minimal"] .file-icon--image {
+    filter: none;
+}

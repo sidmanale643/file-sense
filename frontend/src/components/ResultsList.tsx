@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import type { SearchResult } from '../types';
 import { ResultItem } from './ResultItem';
 import './ResultsList.css';
@@ -21,6 +21,12 @@ export function ResultsList({
     query,
 }: ResultsListProps) {
     const listRef = useRef<HTMLDivElement>(null);
+
+    // Generate animation version key based on query to trigger re-animation on new searches
+    const animationVersion = useMemo(() => ({
+        query,
+        timestamp: Date.now(),
+    }), [query]);
 
     // Scroll selected item into view
     useEffect(() => {
@@ -74,10 +80,14 @@ export function ResultsList({
     }
 
     return (
-        <div className="results-list" ref={listRef} role="listbox">
-            {results.map((result, index) => (
+        <>
+            <div className="results-list__count">
+                {results.length} {results.length === 1 ? 'result' : 'results'} found
+            </div>
+            <div className="results-list" ref={listRef} role="listbox">
+                {results.map((result, index) => (
                 <ResultItem
-                    key={result.id || result.path || index}
+                    key={`${result.id || result.path || index}-${animationVersion.timestamp}`}
                     result={result}
                     isSelected={index === selectedIndex}
                     index={index}
@@ -85,6 +95,7 @@ export function ResultsList({
                     onDoubleClick={() => onOpen(result)}
                 />
             ))}
-        </div>
+            </div>
+        </>
     );
 }

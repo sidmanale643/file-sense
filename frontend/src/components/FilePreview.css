@@ -210,22 +210,179 @@
 }
 
 .file-preview__path {
+    position: relative;
     padding: var(--space-md);
     border-top: 1px solid var(--color-border);
     font-size: var(--text-sm);
     background: rgba(0, 0, 0, 0.2);
 }
 
+.file-preview__path-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-sm);
+}
+
 .file-preview__path-label {
     color: var(--color-text-muted);
-    margin-right: var(--space-sm);
     font-family: var(--font-mono);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+}
+
+.file-preview__copy-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: var(--color-bg-hover);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    flex-shrink: 0;
+}
+
+.file-preview__copy-btn:hover {
+    background: var(--color-accent-dim);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    box-shadow: 0 0 12px rgba(0, 255, 65, 0.2);
+}
+
+.file-preview__copy-btn:active {
+    transform: scale(0.95);
+}
+
+.file-preview__copy-btn svg {
+    width: 14px;
+    height: 14px;
 }
 
 .file-preview__path-value {
     font-family: var(--font-mono);
     color: var(--color-accent);
     word-break: break-all;
+    display: block;
+}
+
+.file-preview__copy-toast {
+    position: absolute;
+    top: -40px;
+    right: var(--space-md);
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--color-accent);
+    color: #050505;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 0 16px rgba(0, 255, 65, 0.4);
+    animation: toast-slide-in 0.2s var(--ease-out), toast-fade-out 0.2s var(--ease-out) 1.8s forwards;
+    z-index: 10;
+}
+
+.file-preview__copy-toast svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+@keyframes toast-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes toast-fade-out {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+}
+
+/* ============================================
+   MINIMAL THEME OVERRIDES
+   ============================================ */
+
+/* Tech border accent - make subtle */
+[data-theme="minimal"] .file-preview::before {
+    opacity: 0.2;
+}
+
+/* Header background - lighter for minimal */
+[data-theme="minimal"] .file-preview__header {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+/* Meta text - use dark color */
+[data-theme="minimal"] .file-preview__meta {
+    color: var(--color-text-muted);
+}
+
+/* Button hover - remove cyan glow */
+[data-theme="minimal"] .file-preview__btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: var(--color-border-focus);
+    color: var(--color-text-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Primary button hover - remove green glow */
+[data-theme="minimal"] .file-preview__btn--primary:hover {
+    background: var(--color-text-primary);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Spinner - remove green glow */
+[data-theme="minimal"] .file-preview__spinner {
+    box-shadow: none;
+}
+
+/* Path background - lighter */
+[data-theme="minimal"] .file-preview__path {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+/* Copy button hover - remove green */
+[data-theme="minimal"] .file-preview__copy-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: var(--color-border-focus);
+    color: var(--color-text-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Path value - use dark color */
+[data-theme="minimal"] .file-preview__path-value {
+    color: var(--color-text-primary);
+}
+
+/* Copy toast - remove green */
+[data-theme="minimal"] .file-preview__copy-toast {
+    background: var(--color-text-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Snippet label - use muted color */
+[data-theme="minimal"] .file-preview__snippet-label {
+    color: var(--color-text-muted);
 }
