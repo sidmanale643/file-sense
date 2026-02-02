@@ -102,14 +102,7 @@ export function ModeSelector({ currentMode, systemMode, hardwareProfile, onModeC
                                 </ul>
                             </div>
 
-                            {isSelected && (
-                                <div className="ms-mode-indicator">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <circle cx="12" cy="12" r="4" fill="currentColor" />
-                                    </svg>
-                                </div>
-                            )}
+
                         </div>
                     );
                 })}
