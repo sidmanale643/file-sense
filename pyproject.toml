@@ -1,20 +1,48 @@
 [project]
 name = "file-sense"
 version = "0.1.0"
-description = "Add your description here"
+description = "Hybrid search engine combining BM25 and semantic search for local document retrieval"
 readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.12"
+authors = [
+    {name = "Sidhant Manale", email = "sidmanale@gmail.com"}
+]
+keywords = ["search", "bm25", "semantic-search", "vector-search", "document-retrieval", "hybrid-search"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Indexing",
+]
 dependencies = [
-    "bm25s>=0.2.14",
     "chonkie>=1.4.2",
     "docling>=2.64.0",
     "einops>=0.8.0",
+    "elasticsearch>=8.0.0",
     "faiss-cpu>=1.13.1",
     "fastapi>=0.124.0",
     "ipykernel>=7.1.0",
-    "lancedb>=0.25.3",
     "nltk>=3.9.2",
-    "pymilvus[milvus-lite,model]>=2.6.5",
     "sentence-transformers>=5.1.2",
-    "uvicorn>=0.38.0",
+    "typer>=0.12.0",
+    "uvicorn[standard]>=0.38.0",
 ]
+
+[project.scripts]
+filesense = "cli:main"
+
+[project.urls]
+Homepage = "https://github.com/sidmanale/file-sense"
+Repository = "https://github.com/sidmanale/file-sense"
+Documentation = "https://github.com/sidmanale/file-sense/blob/main/README.md"
+"Bug Tracker" = "https://github.com/sidmanale/file-sense/issues"
+
+[tool.uv]
+package = true
