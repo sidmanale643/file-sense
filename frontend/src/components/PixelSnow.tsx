@@ -244,22 +244,31 @@ export default function PixelSnow({
     const container = containerRef.current;
     if (!container) return;
 
-    const scene = new Scene();
-    const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    const renderer = new WebGLRenderer({
-      antialias: false,
-      alpha: true,
-      premultipliedAlpha: false,
-      powerPreference: 'high-performance',
-      stencil: false,
-      depth: false
-    });
+    // Check WebGL support
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    if (!gl) {
+      console.warn('WebGL not supported, skipping PixelSnow animation');
+      return;
+    }
 
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(container.offsetWidth, container.offsetHeight);
-    renderer.setClearColor(0x000000, 0);
-    container.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
+    try {
+      const scene = new Scene();
+      const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+      const renderer = new WebGLRenderer({
+        antialias: false,
+        alpha: true,
+        premultipliedAlpha: false,
+        powerPreference: 'default',
+        stencil: false,
+        depth: false
+      });
+
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(container.offsetWidth, container.offsetHeight);
+      renderer.setClearColor(0x000000, 0);
+      container.appendChild(renderer.domElement);
+      rendererRef.current = renderer;
 
     const material = new ShaderMaterial({
       vertexShader,
@@ -316,6 +325,9 @@ export default function PixelSnow({
       rendererRef.current = null;
       materialRef.current = null;
     };
+    } catch (err) {
+      console.error('Failed to initialize PixelSnow:', err);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleResize]); // Only recreate scene when handleResize changes
 

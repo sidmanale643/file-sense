@@ -1,4 +1,4 @@
-import type { SearchResult, FilePreviewData, SearchOptions, Folder, FolderNode, FolderStats, IndexStats, IndexedFile } from '../types';
+import type { SearchResult, FilePreviewData, SearchOptions, Folder, FolderNode, FolderStats, IndexStats, IndexedFile, HardwareProfile, SystemMode, OperatingMode, ModeSwitchResponse, AutoDetectResponse } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -115,17 +115,38 @@ export async function addFolder(path: string, recursive: boolean = false): Promi
     return response.json();
 }
 
-export async function deleteFolder(path: string): Promise<{ success: boolean; removed: number; folder: string }> {
-    const response = await fetch(`${API_BASE}/folders/${encodeURIComponent(path)}`, {
-        method: 'DELETE',
+export async function indexFiles(filePaths: string[]): Promise<{ success: boolean; inserted: number; files: string[] }> {
+    const response = await fetch(`${API_BASE}/index_files`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file_paths: filePaths }),
     });
 
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.detail || `Failed to delete folder: ${response.statusText}`);
+        throw new Error(error.detail || `Failed to index files: ${response.statusText}`);
     }
 
     return response.json();
+}
+
+export async function deleteFolder(path: string): Promise<{ success: boolean; removed: number; folder: string }> {
+    console.log('[API] deleteFolder called with path:', path);
+    console.log('[API] Full URL:', `${API_BASE}/folders/${encodeURIComponent(path)}`);
+    const response = await fetch(`${API_BASE}/folders/${encodeURIComponent(path)}`, {
+        method: 'DELETE',
+    });
+
+    console.log('[API] Response status:', response.status, response.statusText);
+    if (!response.ok) {
+        const error = await response.json();
+        console.error('[API] Error response:', error);
+        throw new Error(error.detail || `Failed to delete folder: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    console.log('[API] Success response:', result);
+    return result;
 }
 
 export async function getFolderTree(): Promise<FolderNode[]> {
@@ -205,6 +226,56 @@ export async function clearIndex(): Promise<{ success: boolean; message: string 
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.detail || `Failed to clear index: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+// ========== System/Hardware API Functions ==========
+
+export async function getHardwareProfile(): Promise<{ detected: HardwareProfile; current_mode: OperatingMode; recommended_mode: OperatingMode }> {
+    const response = await fetch(`${API_BASE}/system/hardware`);
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch hardware profile: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+export async function getSystemMode(): Promise<SystemMode> {
+    const response = await fetch(`${API_BASE}/system/mode`);
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch system mode: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+export async function setSystemMode(mode: OperatingMode): Promise<ModeSwitchResponse> {
+    const response = await fetch(`${API_BASE}/system/mode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || `Failed to set system mode: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
+export async function autoDetectMode(): Promise<AutoDetectResponse> {
+    const response = await fetch(`${API_BASE}/system/mode/auto`, {
+        method: 'POST',
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || `Failed to auto-detect mode: ${response.statusText}`);
     }
 
     return response.json();

@@ -1,4 +1,5 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearch } from '../hooks/useSearch';
 import { useKeyboardNav } from '../hooks/useKeyboardNav';
 import { useGlobalShortcuts } from '../hooks/useGlobalShortcuts';
@@ -8,6 +9,8 @@ import { ResultsList } from './ResultsList';
 import { FilePreview } from './FilePreview';
 import { FilterPanel } from './FilterPanel';
 import { IndexManager } from './IndexManager';
+import { SettingsPanel } from './SettingsPanel';
+import { IndexingToast } from './IndexingToast';
 import TrueFocus from './TrueFocus';
 import PixelSnow from './PixelSnow';
 import type { SearchResult, SearchOptions } from '../types';
@@ -20,7 +23,9 @@ export function Spotlight() {
     const [showPreview, setShowPreview] = useState(true);
     const [showFilters, setShowFilters] = useState(false);
     const [showIndexManager, setShowIndexManager] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
     const [filters, setFilters] = useState<SearchOptions>({});
+    const [indexingPath, setIndexingPath] = useState<string | null>(null);
     const [theme, setTheme] = useState<Theme>(() => {
         const saved = localStorage.getItem('filesense-theme');
         return (saved === 'minimal' || saved === 'matrix') ? saved : 'matrix';
@@ -33,6 +38,17 @@ export function Spotlight() {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('filesense-theme', theme);
     }, [theme]);
+
+    // Refocus search input when panels close
+    useEffect(() => {
+        if (!showFilters && !showIndexManager && !showSettings) {
+            // Small delay to ensure the panel has closed
+            const timeout = setTimeout(() => {
+                searchInputRef.current?.focus();
+            }, 100);
+            return () => clearTimeout(timeout);
+        }
+    }, [showFilters, showIndexManager, showSettings]);
 
     const toggleTheme = useCallback(() => {
         setTheme(prev => prev === 'matrix' ? 'minimal' : 'matrix');
@@ -54,9 +70,21 @@ export function Spotlight() {
         onToggleIndexManager: useCallback(() => {
             setShowIndexManager(prev => {
                 const newValue = !prev;
-                // Close filters if opening index manager
+                // Close filters and settings if opening index manager
                 if (newValue) {
                     setShowFilters(false);
+                    setShowSettings(false);
+                }
+                return newValue;
+            });
+        }, []),
+        onToggleSettings: useCallback(() => {
+            setShowSettings(prev => {
+                const newValue = !prev;
+                // Close filters and index manager if opening settings
+                if (newValue) {
+                    setShowFilters(false);
+                    setShowIndexManager(false);
                 }
                 return newValue;
             });
@@ -97,11 +125,17 @@ export function Spotlight() {
             }
         },
         onEscape: () => {
-            if (query) {
+            if (showFilters) {
+                setShowFilters(false);
+            } else if (showIndexManager) {
+                setShowIndexManager(false);
+            } else if (showSettings) {
+                setShowSettings(false);
+            } else if (query) {
                 clearSearch();
             }
         },
-        enabled: results.length > 0,
+        enabled: results.length > 0 && !showFilters && !showIndexManager && !showSettings,
     });
 
     const selectedResult = results[selectedIndex] || null;
@@ -249,19 +283,41 @@ export function Spotlight() {
                             onClick={() => {
                                 setShowIndexManager(prev => {
                                     const newValue = !prev;
-                                    // Close filters if opening index manager
+                                    // Close filters and settings if opening index manager
                                     if (newValue) {
                                         setShowFilters(false);
+                                        setShowSettings(false);
                                     }
                                     return newValue;
                                 });
                             }}
-                            title="Toggle index manager"
+                            title="Toggle index manager (Cmd+I)"
                         >
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z" />
                             </svg>
                             Index
+                        </button>
+                        <button
+                            className={`spotlight__settings-toggle ${showSettings ? 'active' : ''}`}
+                            onClick={() => {
+                                setShowSettings(prev => {
+                                    const newValue = !prev;
+                                    // Close filters and index manager if opening settings
+                                    if (newValue) {
+                                        setShowFilters(false);
+                                        setShowIndexManager(false);
+                                    }
+                                    return newValue;
+                                });
+                            }}
+                            title="Toggle settings (Cmd+,)"
+                        >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="3" />
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                            </svg>
+                            Settings
                         </button>
                     </div>
                 </div>
@@ -272,24 +328,44 @@ export function Spotlight() {
                         <FilePreview result={selectedResult} />
                     </div>
                 )}
-
-                {showFilters && (
-                    <div className="spotlight__filters">
-                        <FilterPanel
-                            filters={filters}
-                            onFiltersChange={setFilters}
-                            onClear={() => setFilters({})}
-                            onClose={() => setShowFilters(false)}
-                        />
-                    </div>
-                )}
-
-                {showIndexManager && (
-                    <div className="spotlight__index-manager">
-                        <IndexManager onClose={() => setShowIndexManager(false)} />
-                    </div>
-                )}
             </div>
+
+            {showFilters && (
+                <div className="spotlight__filters">
+                    <FilterPanel
+                        filters={filters}
+                        onFiltersChange={setFilters}
+                        onClear={() => setFilters({})}
+                        onClose={() => setShowFilters(false)}
+                    />
+                </div>
+            )}
+
+            {showIndexManager && (
+                <div className="spotlight__index-panel">
+                    <IndexManager
+                        onClose={() => setShowIndexManager(false)}
+                        onIndexingStart={(path) => setIndexingPath(path)}
+                        onIndexingEnd={() => setIndexingPath(null)}
+                    />
+                </div>
+            )}
+
+            {showSettings && (
+                <div className="spotlight__settings-panel">
+                    <SettingsPanel
+                        onClose={() => setShowSettings(false)}
+                    />
+                </div>
+            )}
+
+            {indexingPath !== null && createPortal(
+                <IndexingToast
+                    isVisible={true}
+                    folderPath={indexingPath}
+                />,
+                document.body
+            )}
         </div>
     );
 }

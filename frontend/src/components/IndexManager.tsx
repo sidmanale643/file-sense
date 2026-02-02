@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
     getFolders,
     addFolder,
+    indexFiles,
     deleteFolder,
     getFolderFiles,
     getFolderStats,
@@ -14,8 +15,19 @@ import { FileIcon } from './FileIcon';
 import type { Folder, FolderStats, IndexedFile, IndexStats } from '../types';
 import './IndexManager.css';
 
+type SelectionMode = 'folder' | 'files';
+
+// File System Entry interface for drag and drop
+interface FileSystemEntry {
+    isFile: boolean;
+    isDirectory: boolean;
+    name: string;
+}
+
 interface IndexManagerProps {
     onClose: () => void;
+    onIndexingStart?: (folderPath: string) => void;
+    onIndexingEnd?: () => void;
 }
 
 const FILES_PER_PAGE = 20;
@@ -39,7 +51,7 @@ function formatDate(dateStr: string | null): string {
     });
 }
 
-export function IndexManager({ onClose }: IndexManagerProps) {
+export function IndexManager({ onClose, onIndexingStart, onIndexingEnd }: IndexManagerProps) {
     const [folders, setFolders] = useState<Folder[]>([]);
     const [indexStats, setIndexStats] = useState<IndexStats | null>(null);
     const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
@@ -48,12 +60,22 @@ export function IndexManager({ onClose }: IndexManagerProps) {
     const [filePage, setFilePage] = useState(0);
     const [totalFiles, setTotalFiles] = useState(0);
 
+    const [selectionMode, setSelectionMode] = useState<SelectionMode>('folder');
     const [newFolderPath, setNewFolderPath] = useState('');
     const [newFolderRecursive, setNewFolderRecursive] = useState(false);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [isDragging, setIsDragging] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [showPathDialog, setShowPathDialog] = useState(false);
+    const [basePath, setBasePath] = useState('');
+    const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+
+    const folderInputRef = useRef<HTMLInputElement>(null);
+    const filesInputRef = useRef<HTMLInputElement>(null);
+    const dropZoneRef = useRef<HTMLDivElement>(null);
 
     // Load folders and stats on mount
     useEffect(() => {
@@ -94,6 +116,193 @@ export function IndexManager({ onClose }: IndexManagerProps) {
         }
     };
 
+    // File selection handlers
+    const handleBrowseClick = () => {
+        if (selectionMode === 'folder') {
+            folderInputRef.current?.click();
+        } else {
+            filesInputRef.current?.click();
+        }
+    };
+
+    const handleFolderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        // Get the folder path from the first file
+        // In webkitdirectory, files have webkitRelativePath like "folder/subfolder/file.txt"
+        const firstFile = files[0];
+        const relativePath = (firstFile as File & { webkitRelativePath?: string }).webkitRelativePath || '';
+        const folderName = relativePath.split('/')[0];
+        
+        // For the path input, we'll show the folder name
+        // The actual path will need to be entered manually or handled by backend
+        setNewFolderPath(folderName || 'Selected Folder');
+        
+        // Store the files for potential direct upload/indexing
+        setSelectedFiles(Array.from(files));
+    };
+
+    const handleFilesSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        setSelectedFiles(Array.from(files));
+    };
+
+    const clearSelectedFiles = () => {
+        setSelectedFiles([]);
+        setNewFolderPath('');
+    };
+
+    // Drag and drop handlers
+    const handleDragEnter = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(true);
+    }, []);
+
+    const handleDragLeave = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Only clear if leaving the drop zone (not entering a child)
+        if (e.currentTarget === e.target) {
+            setIsDragging(false);
+        }
+    }, []);
+
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+    }, []);
+
+    const handleDrop = useCallback(async (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+
+        const items = e.dataTransfer.items;
+        if (!items || items.length === 0) return;
+
+        const files: File[] = [];
+        const filePaths: string[] = [];
+
+        // Process dropped items
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            
+            if (item.kind === 'file') {
+                const entry = (item as DataTransferItem & { webkitGetAsEntry?: () => FileSystemEntry | null }).webkitGetAsEntry?.() || null;
+                
+                if (entry) {
+                    if (entry.isDirectory) {
+                        // For directories, we can't get the real path
+                        // User needs to use the browse button or paste path
+                        setError('For folders, please use the Browse button or paste the path directly');
+                        return;
+                    } else {
+                        const file = item.getAsFile();
+                        if (file) {
+                            files.push(file);
+                            // Try to get path from the file if available
+                            const path = (file as File & { path?: string }).path || file.name;
+                            filePaths.push(path);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (files.length > 0) {
+            setSelectionMode('files');
+            setSelectedFiles(files);
+            setNewFolderPath(`${files.length} file${files.length !== 1 ? 's' : ''} selected`);
+        }
+    }, []);
+
+    const handleAdd = async () => {
+        if (selectionMode === 'folder') {
+            await handleAddFolder();
+        } else {
+            await handleAddFiles();
+        }
+    };
+
+    const handleAddFiles = async () => {
+        if (selectedFiles.length === 0) {
+            setError('Please select files to index');
+            return;
+        }
+
+        // Check if we have full paths or just filenames
+        const hasFullPaths = selectedFiles.every(f => {
+            const path = (f as File & { path?: string }).path;
+            return path && path.includes('/') && path !== f.name;
+        });
+
+        if (!hasFullPaths) {
+            // Browser doesn't provide full paths, need user to provide base directory
+            setPendingFiles(selectedFiles);
+            setShowPathDialog(true);
+            return;
+        }
+
+        await indexPendingFiles(selectedFiles);
+    };
+
+    const indexPendingFiles = async (files: File[], baseDir?: string) => {
+        try {
+            setActionLoading('add');
+            setError(null);
+
+            // Extract paths from files
+            const filePaths = files.map(f => {
+                const fullPath = (f as File & { path?: string }).path;
+                if (fullPath && fullPath.includes('/')) {
+                    return fullPath;
+                }
+                // Prepend base directory if provided
+                if (baseDir) {
+                    return `${baseDir.replace(/\/$/, '')}/${f.name}`;
+                }
+                return f.name;
+            });
+
+            onIndexingStart?.(`Indexing ${files.length} file(s)...`);
+            const result = await indexFiles(filePaths);
+
+            setSuccessMessage(`Indexed ${result.inserted} files successfully`);
+            clearSelectedFiles();
+            setPendingFiles([]);
+            setBasePath('');
+            await loadFolders();
+            await loadIndexStats();
+            setTimeout(() => setSuccessMessage(null), 3000);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to index files');
+        } finally {
+            setActionLoading(null);
+            onIndexingEnd?.();
+        }
+    };
+
+    const handlePathDialogSubmit = async () => {
+        if (!basePath.trim()) {
+            setError('Please enter a base directory path');
+            return;
+        }
+        setShowPathDialog(false);
+        setError(null);
+        await indexPendingFiles(pendingFiles, basePath);
+    };
+
+    const handlePathDialogCancel = () => {
+        setShowPathDialog(false);
+        setPendingFiles([]);
+        setBasePath('');
+    };
+
     const loadFolderFiles = async (folder: Folder, page: number = 0) => {
         try {
             setActionLoading(folder.path);
@@ -126,10 +335,12 @@ export function IndexManager({ onClose }: IndexManagerProps) {
         try {
             setActionLoading('add');
             setError(null);
+            onIndexingStart?.(newFolderPath);
             const result = await addFolder(newFolderPath, newFolderRecursive);
             setSuccessMessage(`Added folder: ${result.folder} (${result.inserted} files indexed)`);
             setNewFolderPath('');
             setNewFolderRecursive(false);
+            setSelectedFiles([]);
             await loadFolders();
             await loadIndexStats();
             setTimeout(() => setSuccessMessage(null), 3000);
@@ -137,17 +348,22 @@ export function IndexManager({ onClose }: IndexManagerProps) {
             setError(err instanceof Error ? err.message : 'Failed to add folder');
         } finally {
             setActionLoading(null);
+            onIndexingEnd?.();
         }
     };
 
     const handleDeleteFolder = async (folder: Folder) => {
+        console.log('[Delete Folder] Starting delete for folder:', folder.path);
         if (!confirm(`Are you sure you want to remove "${folder.name}" from the index?\n\nThis will remove all indexed files from this folder.`)) {
+            console.log('[Delete Folder] User cancelled the deletion');
             return;
         }
 
         try {
+            console.log('[Delete Folder] User confirmed, calling API...');
             setActionLoading(folder.path);
             const result = await deleteFolder(folder.path);
+            console.log('[Delete Folder] API response:', result);
             setSuccessMessage(`Removed folder: ${result.folder} (${result.removed} files removed)`);
             if (selectedFolder?.path === folder.path) {
                 setSelectedFolder(null);
@@ -158,6 +374,7 @@ export function IndexManager({ onClose }: IndexManagerProps) {
             await loadIndexStats();
             setTimeout(() => setSuccessMessage(null), 3000);
         } catch (err) {
+            console.error('[Delete Folder] Error:', err);
             setError(err instanceof Error ? err.message : 'Failed to remove folder');
         } finally {
             setActionLoading(null);
@@ -171,6 +388,7 @@ export function IndexManager({ onClose }: IndexManagerProps) {
 
         try {
             setActionLoading(`${folder.path}-reindex`);
+            onIndexingStart?.(folder.path);
             const result = await reindexFolder(folder.path, folder.recursive);
             setSuccessMessage(`Reindexed folder: ${result.folder} (${result.inserted} files indexed)`);
             await loadFolders();
@@ -184,6 +402,7 @@ export function IndexManager({ onClose }: IndexManagerProps) {
             setError(err instanceof Error ? err.message : 'Failed to reindex folder');
         } finally {
             setActionLoading(null);
+            onIndexingEnd?.();
         }
     };
 
@@ -237,22 +456,24 @@ export function IndexManager({ onClose }: IndexManagerProps) {
 
     return (
         <div className="index-manager">
-            <div className="index-manager-overlay" onClick={onClose} />
-
-            <div className="index-manager-container">
-                {/* Header */}
-                <header className="im-header">
-                    <div className="im-header-content">
-                        <h1 className="im-title">Index Manager</h1>
-                        <p className="im-subtitle">Manage your indexed folders and documents</p>
-                    </div>
+            {/* Header */}
+            <header className="im-header">
+                <div className="im-header-content">
+                    <h1 className="im-title">Index Manager</h1>
+                    <p className="im-subtitle">Manage your indexed folders and documents</p>
+                </div>
+                <div className="im-header-actions">
                     <button className="im-close-btn" onClick={onClose} aria-label="Close">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <line x1="18" y1="6" x2="6" y2="18" />
                             <line x1="6" y1="6" x2="18" y2="18" />
                         </svg>
                     </button>
-                </header>
+                </div>
+            </header>
+
+            {/* Scrollable Content */}
+            <div className="im-content">
 
                 {/* Stats Grid */}
                 <div className="im-stats-grid">
@@ -309,23 +530,90 @@ export function IndexManager({ onClose }: IndexManagerProps) {
                     </div>
                 </div>
 
-                {/* Add Folder Section */}
+                {/* Add Section with Mode Toggle */}
                 <div className="im-add-section">
-                    <label className="im-section-label">Add New Folder</label>
-                    <div className="im-add-form">
-                        <div className="im-input-group">
-                            <svg className="im-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <label className="im-section-label">Add to Index</label>
+                    
+                    {/* Mode Toggle */}
+                    <div className="im-mode-toggle">
+                        <button
+                            className={`im-mode-btn ${selectionMode === 'folder' ? 'im-mode-btn--active' : ''}`}
+                            onClick={() => {
+                                setSelectionMode('folder');
+                                clearSelectedFiles();
+                            }}
+                        >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z" />
                             </svg>
-                            <input
-                                type="text"
-                                className="im-input"
-                                placeholder="/path/to/folder"
-                                value={newFolderPath}
-                                onChange={(e) => setNewFolderPath(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAddFolder()}
-                            />
-                        </div>
+                            Folder
+                        </button>
+                        <button
+                            className={`im-mode-btn ${selectionMode === 'files' ? 'im-mode-btn--active' : ''}`}
+                            onClick={() => {
+                                setSelectionMode('files');
+                                clearSelectedFiles();
+                            }}
+                        >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                            </svg>
+                            Files
+                        </button>
+                    </div>
+
+                    {/* Hidden File Inputs */}
+                    <input
+                        ref={folderInputRef}
+                        type="file"
+                        style={{ display: 'none' }}
+                        {...{ webkitdirectory: 'true', directory: 'true' } as any}
+                        onChange={handleFolderSelect}
+                    />
+                    <input
+                        ref={filesInputRef}
+                        type="file"
+                        style={{ display: 'none' }}
+                        multiple
+                        onChange={handleFilesSelect}
+                    />
+
+                    {/* Input + Browse */}
+                    <div className="im-input-group">
+                        <svg className="im-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            {selectionMode === 'folder' ? (
+                                <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z" />
+                            ) : (
+                                <>
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14 2 14 8 20 8" />
+                                </>
+                            )}
+                        </svg>
+                        <input
+                            type="text"
+                            className="im-input"
+                            placeholder={selectionMode === 'folder' ? '/path/to/folder' : 'Paste file paths or browse...'}
+                            value={newFolderPath}
+                            onChange={(e) => setNewFolderPath(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                        />
+                        <button
+                            className="im-browse-btn"
+                            onClick={handleBrowseClick}
+                            title={selectionMode === 'folder' ? 'Browse for folder' : 'Select files'}
+                        >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                <polyline points="22 4 12 14.01 9 11.01" />
+                            </svg>
+                            Browse
+                        </button>
+                    </div>
+
+                    {/* Recursive checkbox - only for folder mode */}
+                    {selectionMode === 'folder' && (
                         <label className="im-checkbox-group">
                             <input
                                 type="checkbox"
@@ -335,30 +623,88 @@ export function IndexManager({ onClose }: IndexManagerProps) {
                             />
                             <span className="im-checkbox-label">Include subdirectories</span>
                         </label>
-                        <button
-                            className="im-add-btn"
-                            onClick={handleAddFolder}
-                            disabled={actionLoading === 'add' || !newFolderPath.trim()}
-                        >
-                            {actionLoading === 'add' ? (
-                                <>
-                                    <svg className="im-spinner" viewBox="0 0 24 24">
-                                        <circle cx="12" cy="12" r="10" fill="none" strokeWidth="2" opacity="0.25" />
-                                        <path fill="none" strokeWidth="2" d="M12 2a10 10 0 0 1 10 10" />
-                                    </svg>
-                                    Adding...
-                                </>
-                            ) : (
-                                <>
+                    )}
+
+                    {/* Selected Files Preview */}
+                    {selectedFiles.length > 0 && (
+                        <div className="im-selected-files">
+                            <div className="im-selected-header">
+                                <span className="im-selected-count">
+                                    {selectedFiles.length} file{selectedFiles.length !== 1 ? 's' : ''} selected
+                                </span>
+                                <button 
+                                    className="im-clear-selected"
+                                    onClick={clearSelectedFiles}
+                                    title="Clear selection"
+                                >
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <line x1="12" y1="5" x2="12" y2="19" />
-                                        <line x1="5" y1="12" x2="19" y2="12" />
+                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                        <line x1="6" y1="6" x2="18" y2="18" />
                                     </svg>
-                                    Add Folder
-                                </>
-                            )}
-                        </button>
+                                </button>
+                            </div>
+                            <div className="im-selected-list">
+                                {selectedFiles.slice(0, 5).map((file, idx) => (
+                                    <div key={idx} className="im-selected-item">
+                                        <FileIcon filename={file.name} size="sm" />
+                                        <span className="im-selected-name">{file.name}</span>
+                                    </div>
+                                ))}
+                                {selectedFiles.length > 5 && (
+                                    <div className="im-selected-more">
+                                        +{selectedFiles.length - 5} more
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Drag & Drop Zone */}
+                    <div
+                        ref={dropZoneRef}
+                        className={`im-drop-zone ${isDragging ? 'im-drop-zone--active' : ''}`}
+                        onDragEnter={handleDragEnter}
+                        onDragLeave={handleDragLeave}
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        <span>
+                            {isDragging 
+                                ? 'Drop files here' 
+                                : `or drag & drop ${selectionMode === 'folder' ? 'a folder' : 'files'} here`
+                            }
+                        </span>
                     </div>
+
+                    {/* Add Button */}
+                    <button
+                        className="im-add-btn"
+                        onClick={handleAdd}
+                        disabled={actionLoading === 'add' || (!newFolderPath.trim() && selectedFiles.length === 0)}
+                    >
+                        {actionLoading === 'add' ? (
+                            <>
+                                <svg className="im-spinner" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="12" r="10" fill="none" strokeWidth="2" opacity="0.25" />
+                                    <path fill="none" strokeWidth="2" d="M12 2a10 10 0 0 1 10 10" />
+                                </svg>
+                                {selectionMode === 'folder' ? 'Adding...' : 'Indexing...'}
+                            </>
+                        ) : (
+                            <>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
+                                {selectionMode === 'folder' ? 'Add Folder' : 'Index Files'}
+                            </>
+                        )}
+                    </button>
                 </div>
 
                 {/* Messages */}
@@ -494,7 +840,11 @@ export function IndexManager({ onClose }: IndexManagerProps) {
                                             </button>
                                             <button
                                                 className="im-action-btn im-action-btn--danger"
-                                                onClick={(e) => { e.stopPropagation(); handleDeleteFolder(folder); }}
+                                                onClick={(e) => {
+                                                    console.log('[Delete Button] Clicked for folder:', folder.path);
+                                                    e.stopPropagation();
+                                                    handleDeleteFolder(folder);
+                                                }}
                                                 title="Remove from index"
                                                 disabled={actionLoading === folder.path}
                                             >
@@ -619,6 +969,67 @@ export function IndexManager({ onClose }: IndexManagerProps) {
                     )}
                 </div>
             </div>
+
+            {/* Base Path Dialog */}
+            {showPathDialog && (
+                <div className="im-dialog-overlay" onClick={handlePathDialogCancel}>
+                    <div className="im-dialog" onClick={(e) => e.stopPropagation()}>
+                        <div className="im-dialog-header">
+                            <h3>Enter File Location</h3>
+                            <p className="im-dialog-subtitle">
+                                Browser security prevents access to full file paths. Please provide the directory where these files are located.
+                            </p>
+                        </div>
+                        <div className="im-dialog-content">
+                            <div className="im-input-group">
+                                <svg className="im-input-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z" />
+                                </svg>
+                                <input
+                                    type="text"
+                                    className="im-input"
+                                    placeholder="/Users/username/Documents"
+                                    value={basePath}
+                                    onChange={(e) => setBasePath(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handlePathDialogSubmit()}
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="im-dialog-files">
+                                <span className="im-dialog-label">Files to index:</span>
+                                <div className="im-dialog-file-list">
+                                    {pendingFiles.slice(0, 5).map((file, idx) => (
+                                        <span key={idx} className="im-dialog-file-item">{file.name}</span>
+                                    ))}
+                                    {pendingFiles.length > 5 && (
+                                        <span className="im-dialog-file-more">+{pendingFiles.length - 5} more</span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="im-dialog-hint">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="16" x2="12" y2="12" />
+                                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                                </svg>
+                                <span>Full paths will be: {basePath || '/your/path'}/{pendingFiles[0]?.name || 'file.pdf'}</span>
+                            </div>
+                        </div>
+                        <div className="im-dialog-actions">
+                            <button className="im-dialog-btn im-dialog-btn--secondary" onClick={handlePathDialogCancel}>
+                                Cancel
+                            </button>
+                            <button className="im-dialog-btn im-dialog-btn--primary" onClick={handlePathDialogSubmit}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
+                                Index Files
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

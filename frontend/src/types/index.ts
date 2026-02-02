@@ -103,3 +103,53 @@ export interface IndexedFile {
     id: number;
     modified_date?: string;
 }
+
+// ========== System/Hardware Types ==========
+
+export type OperatingMode = 'eco' | 'balanced' | 'performance';
+
+export interface HardwareProfile {
+    ram_gb: number;
+    available_ram_gb: number;
+    cpu_cores: number;
+    has_gpu: boolean;
+    gpu_type: 'cuda' | 'mps' | 'rocm' | null;
+    supports_onnx: boolean;
+}
+
+export interface SystemMode {
+    mode: OperatingMode;
+    auto_detected: boolean;
+    oom_protection: boolean;
+    stats: SystemStats;
+}
+
+export interface SystemStats {
+    ram_used_mb: number;
+    ram_available_mb: number;
+    index_size: number;
+    using_onnx: boolean;
+    using_binary: boolean;
+}
+
+export interface ModeInfo {
+    id: OperatingMode;
+    label: string;
+    description: string;
+    ramTarget: string;
+    features: string[];
+    icon: string;
+}
+
+export interface ModeSwitchResponse {
+    success: boolean;
+    previous_mode: OperatingMode;
+    new_mode: OperatingMode;
+    message: string;
+}
+
+export interface AutoDetectResponse {
+    success: boolean;
+    detected_mode: OperatingMode;
+    message: string;
+}

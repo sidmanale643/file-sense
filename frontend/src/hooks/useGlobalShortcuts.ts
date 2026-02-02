@@ -5,6 +5,7 @@ interface UseGlobalShortcutsOptions {
     onClear?: () => void;
     onTogglePreview?: () => void;
     onToggleIndexManager?: () => void;
+    onToggleSettings?: () => void;
     enabled?: boolean;
 }
 
@@ -15,12 +16,14 @@ interface UseGlobalShortcutsOptions {
  * - "Cmd+K" or "Ctrl+K" to clear search
  * - "Space" to toggle preview (only when not typing in input)
  * - "Cmd+I" or "Ctrl+I" to toggle index manager
+ * - "Cmd+," or "Ctrl+," to toggle settings
  */
 export function useGlobalShortcuts({
     onFocusSearch,
     onClear,
     onTogglePreview,
     onToggleIndexManager,
+    onToggleSettings,
     enabled = true,
 }: UseGlobalShortcutsOptions = {}) {
     const handleKeyDown = useCallback(
@@ -59,8 +62,15 @@ export function useGlobalShortcuts({
                 onToggleIndexManager?.();
                 return;
             }
+
+            // Cmd+, or Ctrl+, to toggle settings
+            if ((event.metaKey || event.ctrlKey) && event.key === ',') {
+                event.preventDefault();
+                onToggleSettings?.();
+                return;
+            }
         },
-        [enabled, onFocusSearch, onClear, onTogglePreview, onToggleIndexManager]
+        [enabled, onFocusSearch, onClear, onTogglePreview, onToggleIndexManager, onToggleSettings]
     );
 
     useEffect(() => {

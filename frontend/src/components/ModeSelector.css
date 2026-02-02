@@ -1,0 +1,325 @@
+/* ============================================
+   MODE SELECTOR COMPONENT
+   ============================================ */
+
+.mode-selector {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.ms-header {
+    text-align: center;
+}
+
+.ms-title {
+    margin: 0 0 4px 0;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-primary);
+}
+
+.ms-subtitle {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--color-text-muted);
+}
+
+/* Mode Cards Grid */
+.ms-modes-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.ms-mode-card {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-sm);
+    background: var(--color-bg-base);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+    position: relative;
+}
+
+.ms-mode-card:hover {
+    border-color: var(--color-text-muted);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.ms-mode-card--selected {
+    border-color: orange;
+    background: rgba(255, 165, 0, 0.05);
+    box-shadow: 0 2px 12px rgba(255, 165, 0, 0.15);
+}
+
+.ms-mode-card--recommended {
+    border-color: #22c55e;
+}
+
+.ms-mode-card--recommended:hover {
+    border-color: #22c55e;
+    box-shadow: 0 2px 12px rgba(34, 197, 94, 0.15);
+}
+
+/* Mode Header */
+.ms-mode-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-xs);
+}
+
+.ms-mode-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+.ms-mode-badges {
+    display: flex;
+    gap: var(--space-xs);
+}
+
+.ms-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: var(--radius-xs);
+    font-family: var(--font-body);
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.ms-badge--active {
+    background: rgba(255, 165, 0, 0.15);
+    color: orange;
+}
+
+.ms-badge--recommended {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+}
+
+/* Mode Content */
+.ms-mode-content {
+    flex: 1;
+}
+
+.ms-mode-label {
+    margin: 0 0 4px 0;
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.ms-mode-description {
+    margin: 0 0 var(--space-sm) 0;
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+/* Mode Specs */
+.ms-mode-specs {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-sm);
+    padding: var(--space-xs) 0;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.ms-spec {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ms-spec-label {
+    font-family: var(--font-body);
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.ms-spec-value {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+/* Mode Features */
+.ms-mode-features {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ms-feature {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.ms-feature-icon {
+    width: 12px;
+    height: 12px;
+    color: #22c55e;
+    flex-shrink: 0;
+}
+
+/* Mode Indicator */
+.ms-mode-indicator {
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+    width: 16px;
+    height: 16px;
+    color: orange;
+}
+
+.ms-mode-indicator svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Current Stats Section */
+.ms-current-stats {
+    padding: var(--space-sm);
+    background: var(--color-bg-base);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.ms-stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-xs) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.ms-stat-row:last-child {
+    border-bottom: none;
+}
+
+.ms-stat-label {
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.ms-stat-value {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.ms-stat-value--mode {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.ms-auto-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 4px;
+    background: rgba(255, 165, 0, 0.15);
+    border-radius: var(--radius-xs);
+    font-family: var(--font-body);
+    font-size: 8px;
+    font-weight: 600;
+    color: orange;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.ms-oom-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    margin-top: var(--space-sm);
+    padding: var(--space-xs) var(--space-sm);
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 600;
+    color: #22c55e;
+}
+
+.ms-oom-badge svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* ============================================
+   MINIMAL THEME OVERRIDES
+   ============================================ */
+
+[data-theme="minimal"] .ms-mode-card--selected {
+    border-color: var(--color-border-focus);
+    background: rgba(0, 0, 0, 0.02);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="minimal"] .ms-mode-card--recommended {
+    border-color: var(--color-text-secondary);
+}
+
+[data-theme="minimal"] .ms-badge--active {
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--color-text-primary);
+}
+
+[data-theme="minimal"] .ms-badge--recommended {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--color-text-secondary);
+}
+
+[data-theme="minimal"] .ms-mode-indicator {
+    color: var(--color-text-primary);
+}
+
+[data-theme="minimal"] .ms-auto-badge {
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--color-text-primary);
+}
+
+[data-theme="minimal"] .ms-feature-icon {
+    color: var(--color-text-secondary);
+}
+
+[data-theme="minimal"] .ms-oom-badge {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: var(--color-border);
+    color: var(--color-text-secondary);
+}
