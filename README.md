@@ -1,154 +1,217 @@
-# 📁 FileSense
+# FileSense
 
-**A local-first semantic file search engine** that combines traditional keyword search (BM25) with AI-powered semantic search (FAISS + sentence embeddings) to help you find your documents instantly.
+[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.124-009688.svg)](https://fastapi.tiangolo.com/)
 
-![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.124+-green.svg)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
+A blazing-fast hybrid search engine combining BM25 and semantic search for local document retrieval. Search through PDFs, Word documents, and text files with intelligent ranking.
 
-## ✨ Features
+![FileSense Screenshot](docs/screenshot.png)
 
-- **🔍 Hybrid Search** — Combines BM25 lexical search with dense vector search for best-of-both-worlds retrieval
-- **📄 Multi-format Support** — Index and search TXT, DOCX, and PDF files (with OCR via Docling)
-- **🧠 Semantic Understanding** — Uses sentence-transformers for meaning-based search, not just keyword matching
-- **⚡ Fast Retrieval** — FAISS vector index for millisecond-level search across thousands of documents
-- **🔄 Smart Chunking** — Intelligent text chunking to handle large documents effectively
-- **🖥️ Modern UI** — React + TypeScript frontend with file preview capabilities
-- **📂 File Actions** — Open files and folders directly from the search interface
-- **💾 Persistent Index** — BM25 and FAISS indices are cached to disk for fast startup
+## Features
 
-## 🚀 Quick Start
+- **Hybrid Search**: Combines BM25 keyword matching with semantic/vector search for superior results
+- **Multiple Document Formats**: PDF, DOCX, TXT, and more
+- **Real-time Indexing**: Incremental updates as documents change
+- **Hardware Adaptive**: Automatically adjusts to your system's capabilities (eco/balanced/performance modes)
+- **Local-First**: All processing happens on your machine - no cloud required
+- **Beautiful UI**: Modern React interface with smooth animations
+- **Easy CLI**: One command to start everything
+
+## Quick Start
 
 ### Prerequisites
 
-- Python 3.12+
-- [uv](https://github.com/astral-sh/uv) package manager (recommended) or pip
-- Node.js 18+ (for frontend)
+- Python 3.12 or higher
+- Node.js 18+ (for frontend development)
+- [uv](https://github.com/astral-sh/uv) (Python package manager)
 
-### Backend Setup
+### Installation
 
+**Option 1: Global Installation (Recommended)**
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/file-sense.git
-cd file-sense
+pip install -e .
+```
+This installs the `filesense` command globally, so you can use it from any directory.
 
-# Create virtual environment and install dependencies
+**Option 2: Using uv (Development)**
+```bash
 uv sync
-
-# Activate the virtual environment
 source .venv/bin/activate
-
-# Start the API server
-uvicorn main:app --reload
+filesense init
 ```
 
-The API will be available at `http://localhost:8000`.
+**Option 3: Without activating venv**
+```bash
+./.venv/bin/filesense init
+```
 
-### Frontend Setup
+### Running FileSense
 
+After installation, simply run:
+```bash
+filesense init
+```
+
+This starts both services:
+- **Backend**: http://localhost:8000 (FastAPI with auto-generated docs at `/docs`)
+- **Frontend**: http://localhost:5173 (React + Vite)
+
+### Custom Ports
+```bash
+filesense init --backend-port 8080 --frontend-port 3000
+```
+
+### Stopping
+Press `Ctrl+C` to gracefully stop both servers.
+
+## How It Works
+
+FileSense uses a hybrid scoring approach:
+
+1. **BM25 Retrieval**: Traditional keyword-based search for exact matches
+2. **Semantic Search**: Dense vector embeddings capture meaning and context
+3. **Smart Fusion**: Combines both scores using reciprocal rank fusion for optimal ranking
+
+This means you get results that match your keywords AND understand the semantic meaning of your query.
+
+## Project Structure
+
+```
+file-sense/
+├── src/                    # Python backend
+│   ├── main.py            # FastAPI application
+│   ├── cli.py             # CLI entry point
+│   └── services/          # Business logic
+│       ├── hybrid_search.py
+│       ├── bm25_ret.py
+│       └── pipeline.py
+├── frontend/              # React frontend
+│   ├── src/
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   └── services/
+│   └── package.json
+├── docs/                  # Documentation
+└── tests/                 # Test suite
+```
+
+## Development
+
+### Backend Development
+```bash
+# Run backend only
+uv run uvicorn src.main:app --reload
+
+# Run specific service
+uv run python src/services/hybrid_search.py
+```
+
+### Frontend Development
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-The UI will be available at `http://localhost:5173`.
+### Code Quality
+```bash
+# Python linting and formatting
+ruff check src/
+ruff format src/
 
-## 📖 Usage
-
-### 1. Index Your Documents
-
-First, index a directory of documents:
-
-```python
-from src.pp import Pipeline
-
-pipeline = Pipeline()
-result = pipeline.index_dir("/path/to/your/documents")
-print(f"Indexed {result['inserted']} documents")
+# Frontend linting
+cd frontend
+npm run lint
 ```
 
-Or via the API:
+## CLI Reference
 
 ```bash
-curl -X POST http://localhost:8000/index \
-  -H "Content-Type: application/json" \
-  -d '{"dir_path": "/path/to/your/documents"}'
+filesense init              # Start both servers
+filesense init --help       # See all options
 ```
 
-### 2. Search Your Documents
+## Hardware Modes
 
-**Hybrid Search** (recommended):
-```bash
-curl -X POST http://localhost:8000/hybrid_search \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "machine learning concepts",
-    "k": 10,
-    "alpha": 0.5
-  }'
-```
+FileSense automatically detects your hardware and adjusts:
 
-**Search Parameters:**
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `query` | string | required | Search query |
-| `k` | int | 10 | Number of results to return |
-| `alpha` | float | 0.5 | Balance between BM25 (0) and dense (1) |
-| `deduplicate` | bool | true | Remove duplicate chunks from same file |
-| `rerank` | bool | false | Apply reranking to results |
+- **Eco Mode**: Low resource usage, suitable for laptops
+- **Balanced**: Good performance with reasonable resource use
+- **Performance**: Maximum speed on high-end machines
 
-## 🏗️ Architecture
+## API Documentation
 
-```
-file-sense/
-├── main.py              # FastAPI endpoints
-├── src/
-│   ├── pp.py            # Pipeline orchestrator
-│   └── services/
-│       ├── bm25_ret.py      # BM25 retriever
-│       ├── idx.py           # FAISS vector index
-│       ├── hybrid_search.py # Hybrid search logic
-│       ├── emb.py           # Sentence embeddings
-│       ├── text_chunker.py  # Smart text chunking
-│       ├── file_manager.py  # SQLite database
-│       ├── reranker.py      # Result reranking
-│       └── document_loader/ # File loaders (TXT, DOCX, PDF)
-├── frontend/            # React + TypeScript UI
-└── db/                  # Cached indices & SQLite DB
-```
+Once running, visit http://localhost:8000/docs for interactive API documentation.
 
-## 🔧 API Endpoints
+### Key Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health_check` | GET | Health check |
-| `/search` | POST | Basic file search |
-| `/hybrid_search` | POST | Hybrid BM25 + dense search |
-| `/index` | POST | Index documents from directory |
-| `/preview_file` | POST | Preview file content |
-| `/open_file` | POST | Open file in default app |
-| `/open_folder` | POST | Open folder in file manager |
+- `POST /search` - Search indexed documents
+- `POST /index` - Index a file or directory
+- `GET /stats` - Get indexing statistics
+- `DELETE /clear` - Clear all indexed data
 
-## 🛠️ Tech Stack
+## Supported Formats
 
-- **Backend**: Python 3.12, FastAPI, Uvicorn
-- **Search**: FAISS, BM25s, Sentence Transformers
-- **Document Processing**: Docling (PDF OCR), python-docx
-- **Database**: SQLite
-- **Frontend**: React, TypeScript, Vite
+- PDF (.pdf)
+- Word Documents (.docx)
+- Text Files (.txt)
+- PowerPoint (.pptx) - via Docling
+- Excel (.xlsx) - via Docling
+- Code files (with syntax-aware chunking)
 
-## 📝 Cache Files
+## Contributing
 
-The system automatically creates these cache files in `./db/`:
-- `bm25_cache.pkl` — BM25 retriever state
-- `faiss_index.bin` — FAISS vector index
-- `db.sqlite3` — Document metadata and text
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## 🤝 Contributing
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+## Roadmap
 
-## 📄 License
+- [ ] Cloud sync option
+- [ ] Plugin system for custom document parsers
+- [ ] Advanced query syntax (boolean operators, phrases)
+- [ ] Export search results
+- [ ] Mobile app
 
-MIT License — see [LICENSE](LICENSE) for details.
+## Tech Stack
+
+**Backend:**
+- FastAPI + Uvicorn
+- Sentence Transformers (embeddings)
+- FAISS (vector search)
+- Elasticsearch (BM25)
+- Docling (document parsing)
+- Chonkie (text chunking)
+
+**Frontend:**
+- React 19 + TypeScript 5.9
+- Vite (build tool)
+- Framer Motion (animations)
+- Three.js (3D effects)
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [Sentence Transformers](https://www.sbert.net/) for embedding models
+- [Docling](https://github.com/DS4SD/docling) for document parsing
+- [FastAPI](https://fastapi.tiangolo.com/) for the excellent web framework
+- [uv](https://github.com/astral-sh/uv) for blazing-fast Python package management
+
+## Support
+
+If you encounter any issues or have questions:
+- Open an [issue](https://github.com/sidmanale/file-sense/issues)
+- Check the [documentation](docs/)
+
+---
+
+Made with ❤️ by [Sidhant Manale](https://github.com/sidmanale)
