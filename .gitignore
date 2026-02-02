@@ -56,3 +56,8 @@ temp/
 src/service/test/
 
 *.ipynb
+
+# Local development directories
+.claude/
+.opencode/
+db/
