@@ -7,7 +7,7 @@
 
 A blazing-fast hybrid search engine combining BM25 and semantic search for local document retrieval. Search through PDFs, Word documents, and text files with intelligent ranking.
 
-![FileSense Screenshot](docs/screenshot.png)
+![FileSense Screenshot](assets/image.png)
 
 ## Features
 
